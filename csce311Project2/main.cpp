@@ -1,4 +1,6 @@
+#include <errno.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <sys/un.h>
 #include <unistd.h>
 #include <fstream>
@@ -9,7 +11,8 @@ using std::endl;
 using std::ifstream;
 using std::string;
 
-constexpr auto SOCK_PATH = "tpf_unix_sock.server";
+constexpr auto SOCK_PATH = "unix_sock.server";
+constexpr auto CLIENT_PATH = "unix_sock.client";
 constexpr auto DATA = "";
 
 int main(int argc, char *argv[]) {
@@ -20,12 +23,13 @@ int main(int argc, char *argv[]) {
     string line;
     ifstream file(argv[0]);
 
-    int server_sock, client_sock, len, rc;
+    int server_sock, client_sock, rc;
+    socklen_t len;
     int bytes_rec = 0;
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
     char buffer[256];
-    int backlog = 1;
+    int backlog = 10;
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(buffer, 0, 256);
@@ -66,6 +70,8 @@ int main(int argc, char *argv[]) {
       close(server_sock);
       close(client_sock);
       exit(1);
+    } else {
+      cout << "Server Connection Successful" << endl;
     }
 
     while (getline(file, line)) {
@@ -81,6 +87,44 @@ int main(int argc, char *argv[]) {
   }
   // Child Process
   else if (n1 == 0) {
+    int client_sock, rc;
+    socklen_t len;
+    struct sockaddr_un server_sockaddr;
+    struct sockaddr_un client_sockaddr;
+    char buffer[256];
+    memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
+    memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
+
+    // Create socket
+    client_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (client_sock == -1) {
+      cout << "Socket Error" << endl;
+      exit(1);
+    }
+
+    // Setup socket
+    client_sockaddr.sun_family = AF_UNIX;
+    strcpy(client_sockaddr.sun_path, CLIENT_PATH);
+    len = sizeof(client_sockaddr);
+
+    unlink(CLIENT_PATH);
+    rc = bind(client_sock, (struct sockaddr *)&client_sockaddr, len);
+    if (rc == -1) {
+      cout << "Bind Error" << endl;
+      close(client_sock);
+      exit(1);
+    }
+
+    // Connect
+    server_sockaddr.sun_family = AF_UNIX;
+    strcpy(server_sockaddr.sun_path, SOCK_PATH);
+    rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, len);
+    if (rc == -1) {
+      cout << "Connection Error: " << errno << endl;
+      close(client_sock);
+      exit(1);
+    } else {
+      cout << "Client Connection Successful" << endl;
+    }
   }
 }
- 
