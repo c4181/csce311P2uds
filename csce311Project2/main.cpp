@@ -28,11 +28,13 @@ int main(int argc, char *argv[]) {
     int bytes_rec = 0;
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
-    char buffer[256];
+    char send_buffer[256];
+    char rec_buffer[256];
     int backlog = 10;
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
-    memset(buffer, 0, 256);
+    memset(send_buffer, 0, 256);
+    memset(rec_buffer, 0, 256);
 
     // Create the socket
     server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -70,19 +72,25 @@ int main(int argc, char *argv[]) {
       close(server_sock);
       close(client_sock);
       exit(1);
-    } else {
-      cout << "Server Connection Successful" << endl;
     }
 
     while (getline(file, line)) {
-      strcpy(buffer, DATA);
-      rc = send(client_sock, buffer, strlen(buffer), 0);
+      strcpy(send_buffer, line.c_str());
+      rc = send(client_sock, send_buffer, strlen(send_buffer), 0);
+      memset(send_buffer, 0, 256);
       if (rc == -1) {
         cout << "Send Error" << endl;
         close(server_sock);
         close(client_sock);
         exit(1);
       }
+    }
+    bytes_rec = recv(client_sock, rec_buffer, sizeof(rec_buffer), 0);
+    if (bytes_rec == -1) {
+      cout << "Recieve Error: " << errno << endl;
+    } else {
+      string out(rec_buffer);
+      cout << out << endl;
     }
   }
   // Child Process
@@ -92,6 +100,7 @@ int main(int argc, char *argv[]) {
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
     char buffer[256];
+    string word = argv[1];
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
 
@@ -123,8 +132,23 @@ int main(int argc, char *argv[]) {
       cout << "Connection Error: " << errno << endl;
       close(client_sock);
       exit(1);
+    }
+
+    memset(buffer, 0, sizeof(buffer));
+    rc = recv(client_sock, buffer, sizeof(buffer), 0);
+    if (rc == -1) {
+      cout << "Recieve Error: " << errno << endl;
+      close(client_sock);
+      exit(1);
     } else {
-      cout << "Client Connection Successful" << endl;
+      string rec_data(buffer);
+      // Match found, Send back to parent
+      if (rec_data.find(word) != string::npos) {
+        rc = send(client_sock, buffer, strlen(buffer), 0);
+        if (rc == -1) {
+          cout << "Error Sending: " << errno << endl;
+        }
+      }
     }
   }
 }
