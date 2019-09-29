@@ -11,7 +11,7 @@ using std::endl;
 using std::ifstream;
 using std::string;
 
-constexpr auto SOCK_PATH = "unix_sock.server";
+constexpr auto SERVER_PATH = "unix_sock.server";
 constexpr auto CLIENT_PATH = "unix_sock.client";
 constexpr auto DATA = "";
 
@@ -22,57 +22,6 @@ int main(int argc, char *argv[]) {
   if (n1 > 0) {
     string line;
     ifstream file(argv[0]);
-
-    int server_sock, client_sock, rc;
-    socklen_t len;
-    int bytes_rec = 0;
-    struct sockaddr_un server_sockaddr;
-    struct sockaddr_un client_sockaddr;
-    char send_buffer[256];
-    char rec_buffer[256];
-    int backlog = 10;
-    memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
-    memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
-    memset(send_buffer, 0, 256);
-    memset(rec_buffer, 0, 256);
-
-    // Create the socket
-    server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (server_sock == -1) {
-      cout << "Error opening server socket" << endl;
-      exit(1);
-    }
-
-    // Setup the socket and bind it to a file path
-    server_sockaddr.sun_family = AF_UNIX;
-    strcpy(server_sockaddr.sun_path, SOCK_PATH);
-    len = sizeof(server_sockaddr);
-
-    unlink(SOCK_PATH);
-    rc = bind(server_sock, (struct sockaddr *)&server_sockaddr, len);
-    if (rc == -1) {
-      cout << "Bind Error" << endl;
-      close(server_sock);
-      exit(1);
-    }
-
-    // Listen for incoming connections
-    rc = listen(server_sock, backlog);
-    if (rc == -1) {
-      cout << "Listen Error" << endl;
-      close(server_sock);
-      exit(1);
-    }
-
-    // Accept incoming connection
-    client_sock =
-        accept(server_sock, (struct sockaddr *)&client_sockaddr, &len);
-    if (client_sock == -1) {
-      cout << "Accept Error" << endl;
-      close(server_sock);
-      close(client_sock);
-      exit(1);
-    }
 
     while (getline(file, line)) {
       strcpy(send_buffer, line.c_str());
@@ -85,70 +34,74 @@ int main(int argc, char *argv[]) {
         exit(1);
       }
     }
-    bytes_rec = recv(client_sock, rec_buffer, sizeof(rec_buffer), 0);
-    if (bytes_rec == -1) {
-      cout << "Recieve Error: " << errno << endl;
-    } else {
-      string out(rec_buffer);
-      cout << out << endl;
-    }
   }
   // Child Process
   else if (n1 == 0) {
-    int client_sock, rc;
-    socklen_t len;
+    int server_sock, client_sock, rc;
+    socklen_t length;
+    int byte_rec = 0;
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
     char buffer[256];
-    string word = argv[1];
+    int backlog = 10;
+    bool run = true;
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
+    memset(buffer, 0, 256);
 
-    // Create socket
-    client_sock = socket(AF_UNIX, SOCK_STREAM, 0);
-    if (client_sock == -1) {
-      cout << "Socket Error" << endl;
-      exit(1);
+    server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
+    if (server_sock == -1) {
+      cout << "Error Creating Socket: " << errno << endl;
     }
 
-    // Setup socket
-    client_sockaddr.sun_family = AF_UNIX;
-    strcpy(client_sockaddr.sun_path, CLIENT_PATH);
-    len = sizeof(client_sockaddr);
-
-    unlink(CLIENT_PATH);
-    rc = bind(client_sock, (struct sockaddr *)&client_sockaddr, len);
-    if (rc == -1) {
-      cout << "Bind Error" << endl;
-      close(client_sock);
-      exit(1);
-    }
-
-    // Connect
     server_sockaddr.sun_family = AF_UNIX;
-    strcpy(server_sockaddr.sun_path, SOCK_PATH);
-    rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, len);
+    strcpy(server_sockaddr.sun_path, SERVER_PATH);
+    length = sizeof(server_sockaddr);
+
+    unlink(SERVER_PATH);
+    rc = bind(server_sock, (struct sockaddr *)&server_sockaddr, length);
     if (rc == -1) {
-      cout << "Connection Error: " << errno << endl;
-      close(client_sock);
-      exit(1);
+      cout << "Error Binding Socket: " << errno << endl;
     }
 
-    memset(buffer, 0, sizeof(buffer));
-    rc = recv(client_sock, buffer, sizeof(buffer), 0);
+    rc = listen(server_sock, backlog);
     if (rc == -1) {
-      cout << "Recieve Error: " << errno << endl;
-      close(client_sock);
-      exit(1);
-    } else {
+      cout << "Error Listening: " << errno << endl;
+    }
+
+    while (run) {
+      client_sock =
+          accept(server_sock, (struct sockaddr *)&client_sockaddr, &length);
+      if (client_sock == -1) {
+        cout << "Error Accepting: " << errno << endl;
+      }
+      byte_rec = recv(client_sock, buffer, sizeof(buffer), 0);
+      if (byte_rec == -1) {
+        cout << "Recieve Error: " << errno << endl;
+		// TODO: Handle the Recieve 
+      }
       string rec_data(buffer);
-      // Match found, Send back to parent
+      string word = argv[1];
+      if (rec_data == "EOF") {
+        close(server_sock);
+        close(client_sock);
+        run = false;
+      }
       if (rec_data.find(word) != string::npos) {
         rc = send(client_sock, buffer, strlen(buffer), 0);
         if (rc == -1) {
           cout << "Error Sending: " << errno << endl;
         }
+        close(client_sock);
+      } else {
+        memset(buffer, 0, 256);
+        strcpy(buffer, "NO MATCH FOUND");
+        rc = send(client_sock, buffer, strlen(buffer), 0);
+        if (rc == -1) {
+          cout << "Error Sending: " << errno << endl;
+        }
+        close(client_sock);
       }
     }
+    return (0);
   }
-}
