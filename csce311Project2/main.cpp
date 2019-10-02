@@ -52,20 +52,21 @@ int main(int argc, char *argv[]) {
 
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SERVER_PATH);
-
+    rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, length);
     while (getline(file, line)) {
       memset(buffer, 0, sizeof(buffer));
       strcpy(buffer, line.c_str());
-      rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, length);
+      // rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, length);
       rc = send(client_sock, buffer, strlen(buffer), 0);
       if (rc == -1) {
         cout << "Error Sending: " << errno << endl;
+        exit(1);
         // TODO Handle Error
       }
 
       memset(buffer, 0, sizeof(buffer));
       rc = recv(client_sock, buffer, sizeof(buffer), 0);
-      close(client_sock);
+      // close(client_sock);
       if (rc == -1) {
         cout << "Error Recieving: " << errno << endl;
         // TODO Handle Error
@@ -77,9 +78,10 @@ int main(int argc, char *argv[]) {
     }
     memset(buffer, 0, sizeof(buffer));
     strcpy(buffer, "EOF");
-    rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, length);
+    // rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, length);
     rc = send(client_sock, buffer, strlen(buffer), 0);
     close(client_sock);
+    file.close();
     return 0;
   }
   // Child Process
@@ -116,12 +118,12 @@ int main(int argc, char *argv[]) {
       cout << "Error Listening: " << errno << endl;
     }
 
+    client_sock =
+        accept(server_sock, (struct sockaddr *)&client_sockaddr, &length);
+    if (client_sock == -1) {
+      cout << "Error Accepting: " << errno << endl;
+    }
     while (run) {
-      client_sock =
-          accept(server_sock, (struct sockaddr *)&client_sockaddr, &length);
-      if (client_sock == -1) {
-        cout << "Error Accepting: " << errno << endl;
-      }
       byte_rec = recv(client_sock, buffer, sizeof(buffer), 0);
       if (byte_rec == -1) {
         cout << "Recieve Error: " << errno << endl;
@@ -139,7 +141,7 @@ int main(int argc, char *argv[]) {
         if (rc == -1) {
           cout << "Error Sending: " << errno << endl;
         }
-        close(client_sock);
+        //close(client_sock);
       } else {
         memset(buffer, 0, 256);
         strcpy(buffer, "NO MATCH FOUND");
@@ -147,7 +149,7 @@ int main(int argc, char *argv[]) {
         if (rc == -1) {
           cout << "Error Sending: " << errno << endl;
         }
-        close(client_sock);
+        //close(client_sock);
       }
     }
     return (0);
