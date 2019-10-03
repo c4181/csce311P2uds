@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
   if (n1 > 0) {
     string line;
     string all_lines;
-    ifstream file(argv[0]);
+    ifstream file(argv[1]);
 
     int client_sock, rc;
     socklen_t length;
@@ -54,10 +54,11 @@ int main(int argc, char *argv[]) {
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SERVER_PATH);
 
-    while (getline(file, line)) {
-      all_lines = all_lines + line + "\n";
+    if (file.is_open()) {
+      while (getline(file, line)) {
+        all_lines = all_lines + line + "\n";
+      }
     }
-    cout << all_lines << endl;
     file.close();
     char buffer[all_lines.size() + 1];
     strcpy(buffer, all_lines.c_str());
@@ -121,7 +122,7 @@ int main(int argc, char *argv[]) {
         // TODO: Handle the Recieve
       }
       string rec_data(buffer);
-      string word = argv[1];
+      string word = argv[2];
       if (rec_data == "EOF") {
         close(server_sock);
         close(client_sock);
