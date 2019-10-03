@@ -21,7 +21,7 @@ int main(int argc, char *argv[]) {
   // Parent Process
   if (n1 > 0) {
     string line;
-    ifstream file(argv[0]);
+    ifstream file(argv[1]);
 
     int client_sock, rc;
     socklen_t length;
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
         // TODO: Handle the Recieve
       }
       string rec_data(buffer);
-      string word = argv[1];
+      string word = argv[2];
       if (rec_data == "EOF") {
         close(server_sock);
         close(client_sock);
