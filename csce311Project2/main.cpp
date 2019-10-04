@@ -54,26 +54,35 @@ int main(int argc, char *argv[]) {
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SERVER_PATH);
 
+    // Read the entire file into a string
     if (file.is_open()) {
       while (getline(file, line)) {
         all_lines = all_lines + line + "\n";
       }
     }
     file.close();
+
+    // Convert to a char[] and send to server for processing
     char buffer[all_lines.size() + 1];
     strcpy(buffer, all_lines.c_str());
+    size_t buffer_length = strlen(buffer) + 1;
+    cout << "Client Buffer Length: " << buffer_length << endl;
     rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, length);
     if (rc == -1) {
       cout << "Connection Error: " << errno << endl;
     }
+    rc = send(client_sock, &buffer_length, sizeof(buffer_length), 0);
     rc = send(client_sock, buffer, strlen(buffer), 0);
+
+    // Recieve the result from the server and print to stdout
     memset(buffer, 0, sizeof(buffer));
     rc = recv(client_sock, buffer, sizeof(buffer), 0);
     if (rc == -1) {
       cout << "Recieve Error: " << errno << endl;
     }
+    close(client_sock);
     string result(buffer);
-    //cout << result << endl;
+    cout << result << endl;
     return 0;
   }
   // Child Process
@@ -83,12 +92,11 @@ int main(int argc, char *argv[]) {
     int byte_rec = 0;
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
-    char buffer[256];
     int backlog = 10;
     bool run = true;
+    size_t buffer_length;
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
-    memset(buffer, 0, 256);
 
     server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (server_sock == -1) {
@@ -110,41 +118,27 @@ int main(int argc, char *argv[]) {
       cout << "Error Listening: " << errno << endl;
     }
 
-    while (run) {
-      client_sock =
-          accept(server_sock, (struct sockaddr *)&client_sockaddr, &length);
-      if (client_sock == -1) {
-        cout << "Error Accepting: " << errno << endl;
-      }
-      byte_rec = recv(client_sock, buffer, sizeof(buffer), 0);
-      if (byte_rec == -1) {
-        cout << "Recieve Error: " << errno << endl;
-        // TODO: Handle the Recieve
-      }
-      string rec_data(buffer);
-      string word = argv[2];
-      if (rec_data == "EOF") {
-        close(server_sock);
-        close(client_sock);
-        run = false;
-      }
-      if (rec_data.find(word) != string::npos) {
-        rc = send(client_sock, buffer, strlen(buffer), 0);
-        if (rc == -1) {
-          cout << "Error Sending: " << errno << endl;
-        }
-        close(client_sock);
-      } else {
-        memset(buffer, 0, 256);
-        strcpy(buffer, "NO MATCH FOUND");
-        rc = send(client_sock, buffer, strlen(buffer), 0);
-        if (rc == -1) {
-          cout << "Error Sending: " << errno << endl;
-        } else {
-          cout << "Success Sending" << endl;
-        }
-        close(client_sock);
-      }
+    client_sock =
+        accept(server_sock, (struct sockaddr *)&client_sockaddr, &length);
+    if (client_sock == -1) {
+      cout << "Error Accepting: " << errno << endl;
+    }
+    byte_rec = recv(client_sock, &buffer_length, sizeof(buffer_length), 0);
+    char buffer[buffer_length];
+    cout << "Server Buffer Length " << buffer_length << endl;
+    byte_rec = recv(client_sock, buffer, sizeof(buffer), 0);
+    if (byte_rec == -1) {
+      cout << "Recieve Error: " << errno << endl;
+      // TODO: Handle the Recieve
+    }
+    string rec_data(buffer);
+    string word = argv[2];
+    string ret_data;
+
+    size_t pos = 0;
+    size_t beg_line;
+    size_t end_line;
+    for (size_t i = 0; i < rec_data.size(); ++i) {
     }
     return (0);
   }
