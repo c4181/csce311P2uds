@@ -12,13 +12,11 @@ using std::endl;
 using std::ifstream;
 using std::regex;
 using std::regex_match;
-using std::string;
-using std::regex_constants::ECMAScript;
 using std::regex_constants::icase;
+using std::string;
 
 constexpr auto SERVER_PATH = "unix_sock.server";
 constexpr auto CLIENT_PATH = "unix_sock.client";
-constexpr auto DATA = "";
 
 int main(int argc, char *argv[]) {
   int n1 = fork();
