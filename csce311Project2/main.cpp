@@ -33,6 +33,7 @@ int main(int argc, char *argv[]) {
     char buffer[256];
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
+    memset(buffer, 0, sizeof(buffer));
 
     // Create Socket
     client_sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -81,11 +82,11 @@ int main(int argc, char *argv[]) {
         cout << rec_data << endl;
       }
     }
+    file.close();
     memset(buffer, 0, sizeof(buffer));
     strcpy(buffer, "EOF");
     rc = send(client_sock, buffer, strlen(buffer), 0);
     close(client_sock);
-    file.close();
     return 0;
   }
   // Child Process
@@ -138,8 +139,8 @@ int main(int argc, char *argv[]) {
       string rec_data(buffer);
       string word = argv[2];
       if (rec_data == "EOF") {
-        close(server_sock);
         close(client_sock);
+        close(server_sock);
         run = false;
         break;
       }
