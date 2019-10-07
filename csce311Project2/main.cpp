@@ -18,6 +18,7 @@ using std::regex_constants::icase;
 
 constexpr auto SERVER_PATH = "unix_sock.server";
 constexpr auto CLIENT_PATH = "unix_sock.client";
+constexpr auto BUFFER_SIZE = 256;
 
 /***************************************************************************
  * Author/copyright:  Christopher Moyer.  All rights reserved.
@@ -44,7 +45,7 @@ int main(int argc, char *argv[]) {
     socklen_t length;
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
-    char buffer[256];
+    char buffer[BUFFER_SIZE];
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(buffer, 0, sizeof(buffer));
@@ -115,12 +116,12 @@ int main(int argc, char *argv[]) {
     int byte_rec = 0;
     struct sockaddr_un server_sockaddr;
     struct sockaddr_un client_sockaddr;
-    char buffer[256];
+    char buffer[BUFFER_SIZE];
     int backlog = 10;
     bool run = true;
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
-    memset(buffer, 0, 256);
+    memset(buffer, 0, sizeof(buffer);
 
     server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (server_sock == -1) {
