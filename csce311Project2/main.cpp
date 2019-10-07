@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <sys/un.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <fstream>
 #include <iostream>
@@ -12,11 +13,24 @@ using std::endl;
 using std::ifstream;
 using std::regex;
 using std::regex_match;
-using std::regex_constants::icase;
 using std::string;
+using std::regex_constants::icase;
 
 constexpr auto SERVER_PATH = "unix_sock.server";
 constexpr auto CLIENT_PATH = "unix_sock.client";
+
+/***************************************************************************
+ * Author/copyright:  Christopher Moyer.  All rights reserved.
+ * Date: 7 October 2019
+ *
+ * This program takes in a text file and a word and outputs any matches to 
+ * stdout. Parent process handles all input/output and child process
+ * handles parsing the file for matches. All information is passed
+ * between processes using UNIX sockets.
+ *
+ * Documentation for details of the functions is done as headers for
+ * the functions.
+ **/
 
 int main(int argc, char *argv[]) {
   int n1 = fork();
@@ -56,6 +70,11 @@ int main(int argc, char *argv[]) {
 
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SERVER_PATH);
+
+    // Connect to the server and read in a file until there are no more 
+    // lines. After each line, send the line to server for processing.
+    // Wait for the server to respond and then either output the line
+    // to stdout or continue processing as appropriate.
     rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, length);
     while (file.eof() == false) {
       getline(file, line);
@@ -123,6 +142,10 @@ int main(int argc, char *argv[]) {
       cout << "Error Listening: " << errno << endl;
     }
 
+    // Wait for incoming client connections. Once a client connects,
+    // continue processing and sending the line of text when a match
+    // is found or "NO MATCH FOUND" if a match is not found. Close all
+    // connections once client sends "EOF" signaling the end of the file.
     client_sock =
         accept(server_sock, (struct sockaddr *)&client_sockaddr, &length);
     if (client_sock == -1) {
