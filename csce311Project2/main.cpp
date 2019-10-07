@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
     bool run = true;
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
-    memset(buffer, 0, sizeof(buffer);
+    memset(buffer, 0, sizeof(buffer));
 
     server_sock = socket(AF_UNIX, SOCK_STREAM, 0);
     if (server_sock == -1) {
