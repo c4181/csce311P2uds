@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SERVER_PATH);
 
-    // Connect to the server and read in a file until there are no more 
+    // Connect to the server and read in a file until there are no more
     // lines. After each line, send the line to server for processing.
     // Wait for the server to respond and then either output the line
     // to stdout or continue processing as appropriate.
@@ -108,9 +108,8 @@ int main(int argc, char *argv[]) {
     rc = send(client_sock, buffer, strlen(buffer), 0);
     close(client_sock);
     return 0;
-  }
-  // Child Process
-  else if (n1 == 0) {
+  } else if (n1 == 0) {
+    // Child Process
     int server_sock, client_sock, rc;
     socklen_t length;
     int byte_rec = 0;
