@@ -29,8 +29,6 @@ constexpr auto BUFFER_SIZE = 256;
  * handles parsing the file for matches. All information is passed
  * between processes using UNIX sockets.
  *
- * Documentation for details of the functions is done as headers for
- * the functions.
  **/
 
 int main(int argc, char *argv[]) {
