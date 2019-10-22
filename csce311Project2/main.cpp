@@ -91,14 +91,13 @@ int main(int argc, char *argv[]) {
       if (rc == -1) {
         cout << "Client Error Sending: " << errno << endl;
         exit(1);
-        // TODO Handle Error
       }
 
       memset(buffer, 0, sizeof(buffer));
       rc = recv(client_sock, buffer, sizeof(buffer), 0);
       if (rc == -1) {
         cout << "Error Recieving: " << errno << endl;
-        // TODO Handle Error
+        exit(1);
       }
       string rec_data(buffer);
       if (rec_data != "NO MATCH FOUND") {
@@ -168,7 +167,7 @@ int main(int argc, char *argv[]) {
       byte_rec = recv(client_sock, buffer, sizeof(buffer), 0);
       if (byte_rec == -1) {
         cout << "Recieve Error: " << errno << endl;
-        // TODO: Handle the Recieve
+        exit(1);
       }
 
       string rec_data(buffer);
