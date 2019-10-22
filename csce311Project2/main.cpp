@@ -33,8 +33,6 @@ constexpr auto BUFFER_SIZE = 256;
  * handles parsing the file for matches. All information is passed
  * between processes using UNIX sockets.
  *
- * Documentation for details of the functions is done as headers for
- * the functions.
  **/
 
 int main(int argc, char *argv[]) {
@@ -77,7 +75,7 @@ int main(int argc, char *argv[]) {
     server_sockaddr.sun_family = AF_UNIX;
     strcpy(server_sockaddr.sun_path, SERVER_PATH);
 
-    // Connect to the server and read in a file until there are no more 
+    // Connect to the server and read in a file until there are no more
     // lines. After each line, send the line to server for processing.
     // Wait for the server to respond and then either store the line
     // in a vector or continue processing as appropriate
@@ -122,9 +120,8 @@ int main(int argc, char *argv[]) {
     }
 
     return 0;
-  }
-  // Child Process
-  else if (n1 == 0) {
+  } else if (n1 == 0) {
+    // Child Process
     int server_sock, client_sock, rc;
     socklen_t length;
     int byte_rec = 0;
