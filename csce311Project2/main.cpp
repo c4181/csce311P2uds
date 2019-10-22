@@ -4,17 +4,21 @@
 #include <sys/un.h>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <algorithm>
 #include <fstream>
 #include <iostream>
 #include <regex>
+#include <vector>
 
 using std::cout;
 using std::endl;
 using std::ifstream;
 using std::regex;
 using std::regex_match;
+using std::sort;
 using std::string;
 using std::regex_constants::icase;
+using std::vector;
 
 constexpr auto SERVER_PATH = "unix_sock.server";
 constexpr auto CLIENT_PATH = "unix_sock.client";
@@ -49,6 +53,7 @@ int main(int argc, char *argv[]) {
     memset(&server_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(&client_sockaddr, 0, sizeof(struct sockaddr_un));
     memset(buffer, 0, sizeof(buffer));
+    vector<string> matching_lines;
 
     // Create Socket
     client_sock = socket(AF_UNIX, SOCK_STREAM, 0);
@@ -74,8 +79,8 @@ int main(int argc, char *argv[]) {
 
     // Connect to the server and read in a file until there are no more 
     // lines. After each line, send the line to server for processing.
-    // Wait for the server to respond and then either output the line
-    // to stdout or continue processing as appropriate.
+    // Wait for the server to respond and then either store the line
+    // in a vector or continue processing as appropriate
     rc = connect(client_sock, (struct sockaddr *)&server_sockaddr, length);
     while (file.eof() == false) {
       getline(file, line);
@@ -99,14 +104,23 @@ int main(int argc, char *argv[]) {
       }
       string rec_data(buffer);
       if (rec_data != "NO MATCH FOUND") {
-        cout << rec_data << endl;
+        matching_lines.push_back(string(rec_data));
       }
     }
     file.close();
+
+    // Close the socket
     memset(buffer, 0, sizeof(buffer));
     strcpy(buffer, "EOF");
     rc = send(client_sock, buffer, strlen(buffer), 0);
     close(client_sock);
+
+    // Sort and print the matches
+    sort(matching_lines.begin(), matching_lines.end());
+    for (size_t i = 0; i < matching_lines.size(); ++i) {
+      cout << matching_lines.at(i) << endl;
+    }
+
     return 0;
   }
   // Child Process
